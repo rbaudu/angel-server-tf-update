@@ -60,9 +60,9 @@ public class VisualActivityClassifier {
                 logger.info("Modèle de classification d'activités chargé avec succès");
                 
                 // Lister les signatures disponibles pour le débogage
-                Map<String, Signature> signatures = model.signatures();
-                signatures.forEach((signatureKey, signature) -> {
-                    logger.info("Signature disponible: {}", signatureKey);
+                List<Signature> signatures = model.signatures();
+                signatures.forEach(signature -> {
+                    logger.info("Signature disponible: {}", signature.key());
                     logger.info("  Entrées: {}", signature.inputNames());
                     logger.info("  Sorties: {}", signature.outputNames());
                 });
