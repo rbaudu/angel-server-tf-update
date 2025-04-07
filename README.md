@@ -35,7 +35,7 @@ Ce dépôt contient les classes Java mises à jour pour utiliser TensorFlow 0.5.
    - Emploi de `StdArrays.copyTo()` pour copier les données dans les tenseurs
 
 2. **Accès aux signatures du modèle**
-   - Utilisation de `Map<String, Signature> signatures = model.signatures()` au lieu de `model.signatures().forEach((signature, signatureInfo) -> ...)`
+   - Utilisation de `List<Signature> signatures = model.signatures()` au lieu de `Map<String, Signature>`
    - Exploration correcte des entrées et sorties des signatures
 
 3. **Extraction des données des tenseurs**
@@ -88,61 +88,96 @@ Ce dépôt contient les classes Java mises à jour pour utiliser TensorFlow 0.5.
    logging.level.org.tensorflow=INFO
    ```
 
-## Fonctionnalités de diagnostic
+## Différences API importantes
 
-La nouvelle classe `TensorFlowDiagnostics` peut être utilisée pour diagnostiquer les problèmes liés à TensorFlow :
+### 1. Conversion des images (VideoUtils)
+
+**Avant** (TensorFlow 1.0.0-rc.2) :
+```java
+// Méthode problématique
+float[] pixelData = new float[height * width * channels];
+// Remplissage manuel des données...
+return Tensor.create(new long[]{1, height, width, 3}, floatBuffer);
+```
+
+**Après** (TensorFlow 0.5.0) :
+```java
+// Approche moderne avec des tableaux multidimensionnels
+float[][][][] pixelData = new float[1][height][width][channels];
+// Remplissage...
+return TFloat32.tensorOf(shape, data -> StdArrays.copyTo(pixelData, data));
+```
+
+### 2. Accès aux signatures du modèle
+
+**Avant** :
+```java
+model.signatures().forEach((signature, signatureInfo) -> {
+    // Traitement des signatures...
+});
+```
+
+**Après** :
+```java
+List<Signature> signatures = model.signatures();
+signatures.forEach(signature -> {
+    logger.info("Signature: {}", signature.key());
+    // Accès aux entrées/sorties...
+});
+```
+
+### 3. Extraction des données d'un tensor
+
+**Avant** :
+```java
+float[][][] result = new float[1][100][7];
+resultTensor.copyTo(result);
+```
+
+**Après** :
+```java
+float[] resultArray = new float[(int)resultTensor.size()];
+resultTensor.data().get(resultArray);
+```
+
+## Guide de dépannage
+
+### Erreurs courantes
+
+1. **NoSuchMethodError** : Si vous rencontrez une erreur `NoSuchMethodError`, c'est probablement parce que la méthode n'existe pas dans TensorFlow 0.5.0 ou a une signature différente.
+
+2. **ClassCastException** : Vérifiez que vous utilisez les bons types (TFloat32, TUint8) pour vos tenseurs.
+
+3. **Shape mismatch** : Si le modèle attend une forme différente de celle que vous fournissez, utilisez la classe `TensorFlowDiagnostics` pour analyser les signatures et comprendre ce que le modèle attend.
+
+### Solutions
+
+1. **Utilisez TensorFlowDiagnostics** : Cette classe vous aidera à identifier les problèmes avec vos modèles et tenseurs.
 
 ```java
-@Service
-public class ModelDiagnosticsService {
-    private final TensorFlowDiagnostics diagnostics;
-    private final ModelLoader modelLoader;
-    
-    @Autowired
-    public ModelDiagnosticsService(TensorFlowDiagnostics diagnostics, ModelLoader modelLoader) {
-        this.diagnostics = diagnostics;
-        this.modelLoader = modelLoader;
-    }
-    
-    public void analyzeModel(String modelPath) throws Exception {
-        SavedModelBundle model = modelLoader.loadModel(modelPath);
-        
-        // Lister toutes les opérations du modèle
-        diagnostics.listOperations(model);
-        
-        // Analyser les signatures du modèle
-        diagnostics.analyzeSignatures(model);
-        
-        // Vérifier si le modèle attend des entrées normalisées
-        boolean needsNormalization = diagnostics.doesModelExpectNormalizedInputs(model);
-        System.out.println("Le modèle nécessite des entrées normalisées : " + needsNormalization);
-    }
-}
+// Exemple d'utilisation de TensorFlowDiagnostics
+@Autowired
+private TensorFlowDiagnostics diagnostics;
+
+// Dans votre méthode
+SavedModelBundle model = modelLoader.loadModel(modelPath);
+diagnostics.analyzeSignatures(model);
 ```
+
+2. **Vérifiez les logs** : Augmentez le niveau de logs pour TensorFlow et votre application pour voir les détails des erreurs.
+
+3. **Testez avec des images simples** : Commencez par tester avec des images simples et des tailles réduites pour vérifier que le processus fonctionne.
 
 ## Compatibilité des modèles
 
-Ces classes ont été testées avec :
-- MobileNetV2 pour la classification d'activités
-- Modèles de détection d'objets basés sur SSD/Faster R-CNN
+Les modèles TensorFlow SavedModel existants devraient continuer à fonctionner avec cette mise à jour. Si vous rencontrez des problèmes, vérifiez :
 
-Pour d'autres types de modèles, vous pourriez avoir besoin d'ajuster légèrement les noms des tenseurs d'entrée/sortie.
+1. Les noms des tenseurs d'entrée et de sortie (ils doivent correspondre exactement)
+2. Les formes des tenseurs d'entrée et de sortie
+3. Le besoin ou non de normalisation des entrées
 
-## Résolution des problèmes
+## Support et contribution
 
-### 1. Erreurs de forme de tenseur
-Si vous rencontrez des erreurs liées à la forme des tenseurs, utilisez la méthode `videoUtils.debugTensor()` pour vérifier les dimensions.
+Si vous rencontrez des problèmes avec ces mises à jour, veuillez ouvrir une issue dans ce dépôt ou contribuer avec vos propres améliorations via une pull request.
 
-### 2. Erreurs de type de données
-Assurez-vous d'utiliser le bon format (uint8 vs float32) en fonction des attentes de votre modèle. Utilisez la méthode `TensorFlowDiagnostics.doesModelExpectNormalizedInputs()` pour détecter automatiquement ce besoin.
-
-### 3. Problèmes de performance
-Si les performances sont insuffisantes, essayez d'utiliser des tenseurs uint8 plutôt que float32 lorsque possible, car la conversion est plus rapide.
-
-## Contribution
-
-N'hésitez pas à contribuer à ce projet en soumettant des pull requests ou en signalant des problèmes.
-
-## Licence
-
-Ce projet est distribué sous licence MIT, voir le fichier LICENSE pour plus de détails.
+Pour plus d'informations sur l'API TensorFlow Java 0.5.0, consultez la [documentation officielle](https://www.tensorflow.org/jvm).
