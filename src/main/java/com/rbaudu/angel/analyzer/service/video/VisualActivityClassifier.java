@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
+import org.tensorflow.Signature;
 import org.tensorflow.Tensor;
 import org.tensorflow.TensorFlow;
 import org.tensorflow.types.TFloat32;
@@ -59,8 +60,11 @@ public class VisualActivityClassifier {
                 logger.info("Modèle de classification d'activités chargé avec succès");
                 
                 // Lister les signatures disponibles pour le débogage
-                model.signatures().forEach((signature, signatureInfo) -> {
-                    logger.info("Signature disponible: {} - {}", signature, signatureInfo);
+                Map<String, Signature> signatures = model.signatures();
+                signatures.forEach((signatureKey, signature) -> {
+                    logger.info("Signature disponible: {}", signatureKey);
+                    logger.info("  Entrées: {}", signature.inputNames());
+                    logger.info("  Sorties: {}", signature.outputNames());
                 });
             } else {
                 logger.warn("Aucun modèle de classification d'activités configuré");
