@@ -7,7 +7,7 @@ import org.tensorflow.SavedModelBundle;
 import org.tensorflow.TensorFlow;
 
 import java.nio.file.Paths;
-import java.util.Map;
+import java.util.List;
 import org.tensorflow.Signature;
 
 /**
@@ -34,9 +34,9 @@ public class ModelLoader {
             SavedModelBundle model = SavedModelBundle.load(modelPath, "serve");
             
             // Lister les signatures disponibles pour le débogage
-            Map<String, Signature> signatures = model.signatures();
-            signatures.forEach((signatureKey, signature) -> {
-                logger.info("Signature disponible: {}", signatureKey);
+            List<Signature> signatures = model.signatures();
+            signatures.forEach(signature -> {
+                logger.info("Signature disponible: {}", signature.key());
                 logger.info("  Méthode: {}", signature.methodName());
                 logger.info("  Entrées: {}", signature.inputNames());
                 logger.info("  Sorties: {}", signature.outputNames());
