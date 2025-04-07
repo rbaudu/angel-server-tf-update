@@ -39,8 +39,14 @@ Ce dépôt contient les classes Java mises à jour pour utiliser TensorFlow 0.5.
    - Exploration correcte des entrées et sorties des signatures
 
 3. **Extraction des données des tenseurs**
-   - Utilisation de `resultTensor.data().get(resultArray)` pour obtenir les données du tenseur
-   - Vérification des dimensions du tenseur avec `tensor.size()`
+   - Utilisation de `FloatBuffer` et `copyTo()` pour extraire les données du tenseur
+   - Par exemple : 
+     ```java
+     FloatBuffer buffer = FloatBuffer.allocate(size);
+     resultTensor.copyTo(buffer);
+     buffer.rewind();
+     buffer.get(resultArray);
+     ```
 
 ## Comment utiliser ces mises à jour
 
@@ -137,7 +143,10 @@ resultTensor.copyTo(result);
 **Après** :
 ```java
 float[] resultArray = new float[(int)resultTensor.size()];
-resultTensor.data().get(resultArray);
+FloatBuffer buffer = FloatBuffer.allocate(resultArray.length);
+resultTensor.copyTo(buffer);
+buffer.rewind();
+buffer.get(resultArray);
 ```
 
 ## Guide de dépannage
