@@ -21,6 +21,7 @@ import org.tensorflow.types.TFloat32;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PostConstruct;
+import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -108,12 +109,22 @@ public class PresenceDetector {
             TFloat32 resultScoreTensor = (TFloat32) outputs.get(1);
             
             // Accéder aux données des tensors avec la nouvelle API
-            float[] resultClassArray = new float[(int)resultClassTensor.size()];
-            float[] resultScoreArray = new float[(int)resultScoreTensor.size()];
+            int classSize = (int)resultClassTensor.size();
+            int scoreSize = (int)resultScoreTensor.size();
             
-            // Copier les données des tensors dans les tableaux
-            resultClassTensor.data().get(resultClassArray);
-            resultScoreTensor.data().get(resultScoreArray);
+            float[] resultClassArray = new float[classSize];
+            float[] resultScoreArray = new float[scoreSize];
+            
+            // Utiliser FloatBuffer pour extraire les données des tenseurs
+            FloatBuffer classBuffer = FloatBuffer.allocate(classSize);
+            resultClassTensor.copyTo(classBuffer);
+            classBuffer.rewind();
+            classBuffer.get(resultClassArray);
+            
+            FloatBuffer scoreBuffer = FloatBuffer.allocate(scoreSize);
+            resultScoreTensor.copyTo(scoreBuffer);
+            scoreBuffer.rewind();
+            scoreBuffer.get(resultScoreArray);
             
             // Chercher les détections de personnes
             for (int i = 0; i < Math.min(resultClassArray.length, resultScoreArray.length); i++) {
