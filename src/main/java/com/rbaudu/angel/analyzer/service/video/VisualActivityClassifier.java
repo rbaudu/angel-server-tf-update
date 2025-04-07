@@ -16,6 +16,7 @@ import org.tensorflow.TensorFlow;
 import org.tensorflow.types.TFloat32;
 
 import jakarta.annotation.PostConstruct;
+import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -108,8 +109,12 @@ public class VisualActivityClassifier {
             int numActivities = ActivityType.values().length - 1; // -1 pour exclure ABSENT
             float[] results = new float[numActivities];
             
-            // Accéder aux données du tensor avec la nouvelle API
-            resultTensor.data().get(results);
+            // Utiliser copyTo() directement sur le TFloat32 pour récupérer les données
+            // Cette approche est compatible avec TensorFlow 0.5.0
+            FloatBuffer tempBuffer = FloatBuffer.allocate(numActivities);
+            resultTensor.copyTo(tempBuffer);
+            tempBuffer.rewind();
+            tempBuffer.get(results);
             
             // Conversion des probabilités en map
             Map<ActivityType, Double> result = new HashMap<>();
