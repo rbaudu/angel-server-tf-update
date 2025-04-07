@@ -20,6 +20,7 @@ import org.tensorflow.Tensor;
 import org.tensorflow.TensorFlow;
 import org.tensorflow.ndarray.FloatNdArray;
 import org.tensorflow.ndarray.NdArrays;
+import org.tensorflow.ndarray.Shape;
 import org.tensorflow.types.TFloat32;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -114,8 +115,8 @@ public class PresenceDetector {
             int estimatedSize = 100; // Valeur typique pour les modèles de détection d'objets
             
             // Créer des NdArrays pour extraire les données
-            FloatNdArray classNdArray = NdArrays.ofFloats(estimatedSize);
-            FloatNdArray scoreNdArray = NdArrays.ofFloats(estimatedSize);
+            FloatNdArray classNdArray = NdArrays.ofFloats(Shape.of(estimatedSize));
+            FloatNdArray scoreNdArray = NdArrays.ofFloats(Shape.of(estimatedSize));
             
             // Copier les données depuis les tenseurs
             resultClassTensor.copyTo(classNdArray);
