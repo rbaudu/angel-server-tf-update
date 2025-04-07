@@ -39,14 +39,17 @@ Ce dépôt contient les classes Java mises à jour pour utiliser TensorFlow 0.5.
    - Exploration correcte des entrées et sorties des signatures
 
 3. **Extraction des données des tenseurs**
-   - Utilisation de `FloatBuffer` et `copyTo()` pour extraire les données du tenseur
+   - Utilisation de `NdArrays` pour extraire les données du tenseur
    - Par exemple : 
      ```java
-     FloatBuffer buffer = FloatBuffer.allocate(size);
-     resultTensor.copyTo(buffer);
-     buffer.rewind();
-     buffer.get(resultArray);
+     FloatNdArray ndArray = NdArrays.ofFloats(size);
+     resultTensor.copyTo(ndArray);
+     float value = ndArray.getFloat(i);
      ```
+
+4. **Gestion des résultats d'inférence**
+   - Utilisation de `Result result = runner.run()` au lieu de `List<Tensor>`
+   - Accès aux tenseurs avec `result.get(0)`, `result.get(1)`, etc.
 
 ## Comment utiliser ces mises à jour
 
@@ -142,11 +145,23 @@ resultTensor.copyTo(result);
 
 **Après** :
 ```java
-float[] resultArray = new float[(int)resultTensor.size()];
-FloatBuffer buffer = FloatBuffer.allocate(resultArray.length);
-resultTensor.copyTo(buffer);
-buffer.rewind();
-buffer.get(resultArray);
+FloatNdArray ndArray = NdArrays.ofFloats(size);
+resultTensor.copyTo(ndArray);
+float value = ndArray.getFloat(i);
+```
+
+### 4. Exécution de l'inférence
+
+**Avant** :
+```java
+List<Tensor> outputs = runner.run();
+TFloat32 resultTensor = (TFloat32) outputs.get(0);
+```
+
+**Après** :
+```java
+Result result = runner.run();
+TFloat32 resultTensor = (TFloat32) result.get(0);
 ```
 
 ## Guide de dépannage
