@@ -12,16 +12,18 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.tensorflow.Result;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
 import org.tensorflow.Signature;
 import org.tensorflow.Tensor;
 import org.tensorflow.TensorFlow;
+import org.tensorflow.ndarray.FloatNdArray;
+import org.tensorflow.ndarray.NdArrays;
 import org.tensorflow.types.TFloat32;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PostConstruct;
-import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -104,37 +106,32 @@ public class PresenceDetector {
                     .fetch("StatefulPartitionedCall:1")  // Classes
                     .fetch("StatefulPartitionedCall:2"); // Scores
             
-            List<Tensor> outputs = runner.run();
-            TFloat32 resultClassTensor = (TFloat32) outputs.get(0);
-            TFloat32 resultScoreTensor = (TFloat32) outputs.get(1);
+            Result result = runner.run();
+            TFloat32 resultClassTensor = (TFloat32) result.get(0);
+            TFloat32 resultScoreTensor = (TFloat32) result.get(1);
             
-            // Accéder aux données des tensors avec la nouvelle API
-            int classSize = (int)resultClassTensor.size();
-            int scoreSize = (int)resultScoreTensor.size();
+            // Estimer la taille des résultats
+            int estimatedSize = 100; // Valeur typique pour les modèles de détection d'objets
             
-            float[] resultClassArray = new float[classSize];
-            float[] resultScoreArray = new float[scoreSize];
+            // Créer des NdArrays pour extraire les données
+            FloatNdArray classNdArray = NdArrays.ofFloats(estimatedSize);
+            FloatNdArray scoreNdArray = NdArrays.ofFloats(estimatedSize);
             
-            // Utiliser FloatBuffer pour extraire les données des tenseurs
-            FloatBuffer classBuffer = FloatBuffer.allocate(classSize);
-            resultClassTensor.copyTo(classBuffer);
-            classBuffer.rewind();
-            classBuffer.get(resultClassArray);
-            
-            FloatBuffer scoreBuffer = FloatBuffer.allocate(scoreSize);
-            resultScoreTensor.copyTo(scoreBuffer);
-            scoreBuffer.rewind();
-            scoreBuffer.get(resultScoreArray);
+            // Copier les données depuis les tenseurs
+            resultClassTensor.copyTo(classNdArray);
+            resultScoreTensor.copyTo(scoreNdArray);
             
             // Chercher les détections de personnes
-            for (int i = 0; i < Math.min(resultClassArray.length, resultScoreArray.length); i++) {
-                logger.debug("Détection avec un score de {} et une classe de {}", 
-                        resultScoreArray[i], resultClassArray[i]);
+            for (int i = 0; i < estimatedSize; i++) {
+                float classId = classNdArray.getFloat(i);
+                float score = scoreNdArray.getFloat(i);
+                
+                logger.debug("Détection avec un score de {} et une classe de {}", score, classId);
 
-                if (resultScoreArray[i] > config.getPresenceThreshold()) {
-                    int classId = (int) resultClassArray[i];  // Convertir en entier
-                    if (classId == 1) {  // Classe 1 = personne
-                        logger.debug("Personne détectée avec un score de {}", resultScoreArray[i]);
+                if (score > config.getPresenceThreshold()) {
+                    int classIdInt = (int) classId;  // Convertir en entier
+                    if (classIdInt == 1) {  // Classe 1 = personne
+                        logger.debug("Personne détectée avec un score de {}", score);
                         return true;
                     }
                 }
