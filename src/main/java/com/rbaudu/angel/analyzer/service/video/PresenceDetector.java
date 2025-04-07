@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
+import org.tensorflow.Signature;
 import org.tensorflow.Tensor;
 import org.tensorflow.TensorFlow;
 import org.tensorflow.types.TFloat32;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service responsable de la détection de présence humaine dans les images vidéo.
@@ -63,8 +65,11 @@ public class PresenceDetector {
                 logger.info("Modèle de détection de présence humaine chargé avec succès");
                 
                 // Lister les signatures disponibles pour le débogage
-                model.signatures().forEach((signature, signatureInfo) -> {
-                    logger.info("Signature disponible: {} - {}", signature, signatureInfo);
+                Map<String, Signature> signatures = model.signatures();
+                signatures.forEach((signatureKey, signature) -> {
+                    logger.info("Signature disponible: {}", signatureKey);
+                    logger.info("  Entrées: {}", signature.inputNames());
+                    logger.info("  Sorties: {}", signature.outputNames());
                 });
             } else {
                 logger.warn("Aucun modèle de détection de présence humaine configuré");
