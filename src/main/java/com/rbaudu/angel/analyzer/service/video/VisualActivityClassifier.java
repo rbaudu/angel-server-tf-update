@@ -16,6 +16,7 @@ import org.tensorflow.Tensor;
 import org.tensorflow.TensorFlow;
 import org.tensorflow.ndarray.FloatNdArray;
 import org.tensorflow.ndarray.NdArrays;
+import org.tensorflow.ndarray.Shape;
 import org.tensorflow.types.TFloat32;
 
 import jakarta.annotation.PostConstruct;
@@ -112,7 +113,8 @@ public class VisualActivityClassifier {
             float[] results = new float[numActivities];
             
             // Créer un tableau NdArray pour recevoir les données
-            FloatNdArray ndArray = NdArrays.ofFloats(numActivities);
+            // Utiliser Shape.of() au lieu de passer directement numActivities
+            FloatNdArray ndArray = NdArrays.ofFloats(Shape.of(numActivities));
             resultTensor.copyTo(ndArray);
             
             // Copier les données depuis le NdArray vers le tableau de float
