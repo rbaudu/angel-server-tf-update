@@ -7,6 +7,8 @@ import org.tensorflow.SavedModelBundle;
 import org.tensorflow.TensorFlow;
 
 import java.nio.file.Paths;
+import java.util.Map;
+import org.tensorflow.Signature;
 
 /**
  * Utilitaire pour charger les modèles TensorFlow.
@@ -31,9 +33,13 @@ public class ModelLoader {
             // Charger le modèle avec la nouvelle API
             SavedModelBundle model = SavedModelBundle.load(modelPath, "serve");
             
-            // Lister les signatures et les opérations disponibles pour le débogage
-            model.signatures().forEach((signature, signatureInfo) -> {
-                logger.info("Signature disponible: {} - {}", signature, signatureInfo);
+            // Lister les signatures disponibles pour le débogage
+            Map<String, Signature> signatures = model.signatures();
+            signatures.forEach((signatureKey, signature) -> {
+                logger.info("Signature disponible: {}", signatureKey);
+                logger.info("  Méthode: {}", signature.methodName());
+                logger.info("  Entrées: {}", signature.inputNames());
+                logger.info("  Sorties: {}", signature.outputNames());
             });
             
             logger.info("Modèle chargé avec succès");
