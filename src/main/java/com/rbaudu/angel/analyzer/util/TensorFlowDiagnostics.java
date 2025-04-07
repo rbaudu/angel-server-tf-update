@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Classe utilitaire pour diagnostiquer les problèmes liés à TensorFlow
@@ -164,11 +163,11 @@ public class TensorFlowDiagnostics {
             return;
         }
         
-        Map<String, Signature> signatures = model.signatures();
+        List<Signature> signatures = model.signatures();
         logger.info("Le modèle contient {} signature(s)", signatures.size());
         
-        signatures.forEach((key, signature) -> {
-            logger.info("Signature '{}' :", key);
+        signatures.forEach(signature -> {
+            logger.info("Signature '{}' :", signature.key());
             
             if (signature.methodName() != null) {
                 logger.info("  Méthode: {}", signature.methodName());
