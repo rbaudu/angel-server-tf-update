@@ -8,15 +8,17 @@ import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.tensorflow.Result;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
 import org.tensorflow.Signature;
 import org.tensorflow.Tensor;
 import org.tensorflow.TensorFlow;
+import org.tensorflow.ndarray.FloatNdArray;
+import org.tensorflow.ndarray.NdArrays;
 import org.tensorflow.types.TFloat32;
 
 import jakarta.annotation.PostConstruct;
-import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -102,19 +104,21 @@ public class VisualActivityClassifier {
                     .feed("serving_default_inputs", imageTensor)
                     .fetch("StatefulPartitionedCall");
             
-            List<Tensor> outputs = runner.run();
-            TFloat32 resultTensor = (TFloat32) outputs.get(0);
+            Result result = runner.run();
+            TFloat32 resultTensor = (TFloat32) result.get(0);
             
             // Extraire les résultats du Tensor
             int numActivities = ActivityType.values().length - 1; // -1 pour exclure ABSENT
             float[] results = new float[numActivities];
             
-            // Utiliser copyTo() directement sur le TFloat32 pour récupérer les données
-            // Cette approche est compatible avec TensorFlow 0.5.0
-            FloatBuffer tempBuffer = FloatBuffer.allocate(numActivities);
-            resultTensor.copyTo(tempBuffer);
-            tempBuffer.rewind();
-            tempBuffer.get(results);
+            // Créer un tableau NdArray pour recevoir les données
+            FloatNdArray ndArray = NdArrays.ofFloats(numActivities);
+            resultTensor.copyTo(ndArray);
+            
+            // Copier les données depuis le NdArray vers le tableau de float
+            for (int i = 0; i < numActivities; i++) {
+                results[i] = ndArray.getFloat(i);
+            }
             
             // Conversion des probabilités en map
             Map<ActivityType, Double> result = new HashMap<>();
