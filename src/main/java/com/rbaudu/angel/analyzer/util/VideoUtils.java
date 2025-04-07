@@ -74,18 +74,18 @@ public class VideoUtils {
         int channels = frame.channels();
         
         // Format: [1, height, width, 3]
-        byte[] pixelData = new byte[1 * height * width * channels];
+        // Créer un tableau multidimensionnel pour stocker les données
+        byte[][][][] pixelData = new byte[1][height][width][channels];
         
         // Conversion des données OpenCV en tableau de bytes
         BytePointer bytePtr = frame.ptr();
         
-        int idx = 0;
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int pos = y * width * channels + x * channels;
                 for (int c = 0; c < channels; c++) {
                     // Conserver les valeurs brutes (0-255)
-                    pixelData[idx++] = bytePtr.get(pos + c);
+                    pixelData[0][y][x][c] = bytePtr.get(pos + c);
                 }
             }
         }
@@ -94,8 +94,8 @@ public class VideoUtils {
         Shape shape = Shape.of(1, height, width, channels);
         TUint8 tensor = TUint8.tensorOf(shape);
         
-        // Copier les données dans le tensor
-        tensor.setData(StdArrays.ndCopyOf(pixelData, 1, height, width, channels));
+        // Copier les données dans le tensor avec le tableau multidimensionnel
+        tensor.setData(StdArrays.ndCopyOf(pixelData));
         
         logger.debug("Tensor uint8 créé avec succès, forme: {}", Arrays.toString(shape.asArray()));
         return tensor;
