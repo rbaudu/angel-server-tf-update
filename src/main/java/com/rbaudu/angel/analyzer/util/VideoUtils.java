@@ -6,7 +6,6 @@ import org.bytedeco.opencv.global.opencv_imgproc;
 import org.springframework.stereotype.Component;
 import org.tensorflow.Tensor;
 import org.tensorflow.ndarray.Shape;
-import org.tensorflow.ndarray.FloatNdArray;
 import org.tensorflow.ndarray.StdArrays;
 import org.tensorflow.types.TFloat32;
 import org.tensorflow.types.TUint8;
@@ -16,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.util.Arrays;
 
 /**
@@ -74,7 +71,6 @@ public class VideoUtils {
         int channels = frame.channels();
         
         // Format: [1, height, width, 3]
-        // Créer un tableau multidimensionnel pour stocker les données
         byte[][][][] pixelData = new byte[1][height][width][channels];
         
         // Conversion des données OpenCV en tableau de bytes
@@ -92,13 +88,9 @@ public class VideoUtils {
         
         // Création du tensor uint8 avec la nouvelle API TensorFlow
         Shape shape = Shape.of(1, height, width, channels);
-        TUint8 tensor = TUint8.tensorOf(shape);
         
-        // Copier les données dans le tensor avec le tableau multidimensionnel
-        tensor.setData(StdArrays.ndCopyOf(pixelData));
-        
-        logger.debug("Tensor uint8 créé avec succès, forme: {}", Arrays.toString(shape.asArray()));
-        return tensor;
+        // Utilisation de tensorOf avec un consumer pour copier les données
+        return TUint8.tensorOf(shape, data -> StdArrays.copyTo(pixelData, data));
     }
     
     /**
@@ -127,13 +119,9 @@ public class VideoUtils {
         
         // Création du tensor TFloat32 avec la nouvelle API TensorFlow
         Shape shape = Shape.of(1, height, width, channels);
-        TFloat32 tensor = TFloat32.tensorOf(shape);
         
-        // Copier les données dans le tensor
-        tensor.setData(StdArrays.ndCopyOf(pixelData));
-        
-        logger.debug("Tensor float32 créé avec succès, forme: {}", Arrays.toString(shape.asArray()));
-        return tensor;
+        // Utilisation de tensorOf avec un consumer pour copier les données
+        return TFloat32.tensorOf(shape, data -> StdArrays.copyTo(pixelData, data));
     }
     
     /**
