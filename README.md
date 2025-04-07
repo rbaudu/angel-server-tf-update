@@ -42,7 +42,7 @@ Ce dépôt contient les classes Java mises à jour pour utiliser TensorFlow 0.5.
    - Utilisation de `NdArrays` pour extraire les données du tenseur
    - Par exemple : 
      ```java
-     FloatNdArray ndArray = NdArrays.ofFloats(size);
+     FloatNdArray ndArray = NdArrays.ofFloats(Shape.of(size));
      resultTensor.copyTo(ndArray);
      float value = ndArray.getFloat(i);
      ```
@@ -145,7 +145,7 @@ resultTensor.copyTo(result);
 
 **Après** :
 ```java
-FloatNdArray ndArray = NdArrays.ofFloats(size);
+FloatNdArray ndArray = NdArrays.ofFloats(Shape.of(size));
 resultTensor.copyTo(ndArray);
 float value = ndArray.getFloat(i);
 ```
@@ -164,41 +164,56 @@ Result result = runner.run();
 TFloat32 resultTensor = (TFloat32) result.get(0);
 ```
 
-## Guide de dépannage
+## Erreurs courantes et solutions
 
-### Erreurs courantes
+### 1. Création des NdArrays
 
-1. **NoSuchMethodError** : Si vous rencontrez une erreur `NoSuchMethodError`, c'est probablement parce que la méthode n'existe pas dans TensorFlow 0.5.0 ou a une signature différente.
+**Erreur** : `The method ofFloats(Shape) in the type NdArrays is not applicable for the arguments (int)`
 
-2. **ClassCastException** : Vérifiez que vous utilisez les bons types (TFloat32, TUint8) pour vos tenseurs.
-
-3. **Shape mismatch** : Si le modèle attend une forme différente de celle que vous fournissez, utilisez la classe `TensorFlowDiagnostics` pour analyser les signatures et comprendre ce que le modèle attend.
-
-### Solutions
-
-1. **Utilisez TensorFlowDiagnostics** : Cette classe vous aidera à identifier les problèmes avec vos modèles et tenseurs.
-
+**Solution** : Utilisez `Shape.of()` pour créer un objet Shape à partir d'un entier :
 ```java
-// Exemple d'utilisation de TensorFlowDiagnostics
-@Autowired
-private TensorFlowDiagnostics diagnostics;
+// Incorrect
+FloatNdArray ndArray = NdArrays.ofFloats(numActivities);
 
-// Dans votre méthode
-SavedModelBundle model = modelLoader.loadModel(modelPath);
-diagnostics.analyzeSignatures(model);
+// Correct
+FloatNdArray ndArray = NdArrays.ofFloats(Shape.of(numActivities));
 ```
 
-2. **Vérifiez les logs** : Augmentez le niveau de logs pour TensorFlow et votre application pour voir les détails des erreurs.
+### 2. Extraction des données d'un tensor
 
-3. **Testez avec des images simples** : Commencez par tester avec des images simples et des tailles réduites pour vérifier que le processus fonctionne.
+**Erreur** : `The method data() is undefined for the type TFloat32`
 
-## Compatibilité des modèles
+**Solution** : Utilisez `copyTo()` avec un NdArray :
+```java
+// Incorrect
+resultTensor.data().get(resultArray);
 
-Les modèles TensorFlow SavedModel existants devraient continuer à fonctionner avec cette mise à jour. Si vous rencontrez des problèmes, vérifiez :
+// Correct
+FloatNdArray ndArray = NdArrays.ofFloats(Shape.of(size));
+resultTensor.copyTo(ndArray);
+```
 
-1. Les noms des tenseurs d'entrée et de sortie (ils doivent correspondre exactement)
-2. Les formes des tenseurs d'entrée et de sortie
-3. Le besoin ou non de normalisation des entrées
+### 3. Types de retour des méthodes
+
+**Erreur** : `Type mismatch: cannot convert from Result to List<Tensor>`
+
+**Solution** : Adaptez votre code pour utiliser la classe `Result` au lieu de `List<Tensor>` :
+```java
+// Incorrect
+List<Tensor> outputs = runner.run();
+
+// Correct
+Result result = runner.run();
+```
+
+### 4. Importations manquantes
+
+Pour éviter les erreurs d'importation, assurez-vous d'inclure :
+```java
+import org.tensorflow.ndarray.Shape;
+import org.tensorflow.ndarray.NdArrays;
+import org.tensorflow.ndarray.FloatNdArray;
+```
 
 ## Support et contribution
 
