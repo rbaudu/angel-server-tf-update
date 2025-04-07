@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Service responsable de la détection de présence humaine dans les images vidéo.
@@ -65,9 +64,9 @@ public class PresenceDetector {
                 logger.info("Modèle de détection de présence humaine chargé avec succès");
                 
                 // Lister les signatures disponibles pour le débogage
-                Map<String, Signature> signatures = model.signatures();
-                signatures.forEach((signatureKey, signature) -> {
-                    logger.info("Signature disponible: {}", signatureKey);
+                List<Signature> signatures = model.signatures();
+                signatures.forEach(signature -> {
+                    logger.info("Signature disponible: {}", signature.key());
                     logger.info("  Entrées: {}", signature.inputNames());
                     logger.info("  Sorties: {}", signature.outputNames());
                 });
