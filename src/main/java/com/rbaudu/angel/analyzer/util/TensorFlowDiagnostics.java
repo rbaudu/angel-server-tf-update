@@ -5,12 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.tensorflow.Graph;
 import org.tensorflow.Operation;
 import org.tensorflow.SavedModelBundle;
+import org.tensorflow.Signature;
 import org.tensorflow.Tensor;
 import org.springframework.stereotype.Component;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Classe utilitaire pour diagnostiquer les problèmes liés à TensorFlow
@@ -151,5 +152,47 @@ public class TensorFlowDiagnostics {
         
         logger.info("Le modèle ne semble pas contenir de normalisation intégrée");
         return false;
+    }
+    
+    /**
+     * Analyse les signatures du modèle pour une meilleure compréhension de son interface
+     * @param model Le modèle à analyser
+     */
+    public void analyzeSignatures(SavedModelBundle model) {
+        if (model == null) {
+            logger.error("Impossible d'analyser les signatures : modèle null");
+            return;
+        }
+        
+        Map<String, Signature> signatures = model.signatures();
+        logger.info("Le modèle contient {} signature(s)", signatures.size());
+        
+        signatures.forEach((key, signature) -> {
+            logger.info("Signature '{}' :", key);
+            
+            if (signature.methodName() != null) {
+                logger.info("  Méthode: {}", signature.methodName());
+            }
+            
+            logger.info("  Entrées ({}):", signature.inputNames().size());
+            signature.inputNames().forEach(inputName -> {
+                Signature.TensorDescription desc = signature.getInputs().get(inputName);
+                logger.info("    {}: type={}, shape={}, opName={}",
+                          inputName, 
+                          desc.dataType.name(), 
+                          formatShape(desc.shape.asArray()),
+                          desc.name);
+            });
+            
+            logger.info("  Sorties ({}):", signature.outputNames().size());
+            signature.outputNames().forEach(outputName -> {
+                Signature.TensorDescription desc = signature.getOutputs().get(outputName);
+                logger.info("    {}: type={}, shape={}, opName={}",
+                          outputName, 
+                          desc.dataType.name(), 
+                          formatShape(desc.shape.asArray()),
+                          desc.name);
+            });
+        });
     }
 }
